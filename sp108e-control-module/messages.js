@@ -66,7 +66,8 @@ var messages = {
         console.log(lightsHex);
 
         return `38${lightsHex}00002D83`;
-    }
+    },
+    triggerLiveMode: '38F800002483'
 };
 
 module.exports = messages;

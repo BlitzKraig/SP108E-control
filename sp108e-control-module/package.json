@@ -13,6 +13,8 @@
   "author": "Craig C",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
+    "jimp": "^0.6.4",
+    "pngjs": "^3.4.0",
     "screenshot-desktop": "^1.8.0"
   }
 }

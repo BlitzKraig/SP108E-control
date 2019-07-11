@@ -2,6 +2,9 @@ const express = require('express');
 const app = express();
 const net = require('net');
 const messages = require('./messages');
+const screenshot = require('screenshot-desktop');
+
+const jimp = require('jimp');
 
 var createMessage = (message) => {
   return new Buffer(message, 'hex');
@@ -15,7 +18,7 @@ sock.on('data', function (d) {
 
 var sp108e = {
   connect: (ip, port) => {
-    sock.connect(port||8189, ip||'192.168.0.23');
+    sock.connect(port || 8189, ip || '192.168.0.23');
   },
   close: () => {
     sock.end();
@@ -35,6 +38,13 @@ var sp108e = {
     console.log(`Writing message ${message}`);
     sock.write(createMessage(message));
   },
+  sendData: (data) => {
+    if (!data){
+      return console.log('No data to send');
+    }
+    // console.log(`Writing data ${data}`);
+    sock.write(createMessage(data));
+  },
   setSegments: (segmentCount) => {
     if (segmentCount < 1 || segmentCount > 30) {
       return console.log('Please use a segmentcount between 1 and 30');
@@ -52,6 +62,57 @@ var sp108e = {
       sp108e.sendMessage(messages.setSegmentCount(segmentCount));
       sp108e.sendMessage(messages.setLightsPerSegmentCount(lightsPerSegment));
     }
+  },
+  captureDesktop: () => {
+    // var fs = require('fs');
+    // var PNG = require('pngjs').PNG;
+
+
+
+
+    screenshot.listDisplays().then((displays) => {
+      // Call livemode
+      sp108e.sendMessage(messages.triggerLiveMode);
+
+      setInterval(() => {
+        console.time('Screen');
+
+        var byteCount = 0;
+        screenshot({
+            screen: displays[0].id,
+            format: 'png'
+          }).then((img) => {
+            console.timeEnd('Screen');
+
+            jimp.read(img)
+            .then((image)=>{
+              image.resize(300, image.bitmap.height, jimp.RESIZE_NEAREST_NEIGHBOR);
+              var data = '';
+              image.scan(0, image.bitmap.height / 2, image.bitmap.width, 1, function(x, y, idx) {
+
+                // x, y is the position of this pixel on the image
+                // idx is the position start position of this rgba tuple in the bitmap Buffer
+                var red = this.bitmap.data[idx + 0].toString(16);
+                var green = this.bitmap.data[idx + 1].toString(16);
+                var blue = this.bitmap.data[idx + 2].toString(16);
+
+                data += red.length===2?red:`0${red}`;
+                data += green.length===2?green:`0${green}`;
+                data += blue.length===2?blue:`0${blue}`;
+                if (x === image.bitmap.width - 1) {
+                  sp108e.sendData(data);
+                }
+              });
+
+            }).catch((err)=>{
+
+            });
+});
+
+    }, 400);
+    });
+
+
   }
 };
 
