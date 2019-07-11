@@ -13,8 +13,11 @@
   "author": "Craig C",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
+    "express": "^4.17.1",
     "jimp": "^0.6.4",
+    "pixcolor": "^1.0.0",
     "pngjs": "^3.4.0",
+    "screenres": "^2.0.1",
     "screenshot-desktop": "^1.8.0"
   }
 }
