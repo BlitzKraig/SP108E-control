@@ -5,6 +5,9 @@ const messages = require('./messages');
 const screenshot = require('screenshot-desktop');
 const utils = require('./utils');
 const screenRes = require('screenres');
+const screenshotnode = require('screenshot-node');
+
+const robot = require('robotjs');
 
 const jimp = require('jimp');
 
@@ -83,62 +86,103 @@ var sp108e = {
 
 
       var capture = () => {
-        console.time('Screen');
+        // console.time('Screen');
 
         //IF Windows:
 
-        // var pixColor = require('pixcolor');
+        // // var pixColor = require('pixcolor');
         // var colors = [];
-        // var xPixels = utils.distributedCopy(screenRes.get()[0], 300);
-        // var yPixel = screenRes.get()[1];
+        // var xPixels = utils.distributedCopy([...Array(screenRes.get()[0]).keys()], 300);
+        // var yPixel = screenRes.get()[1] / 2;
+
+        // // console.log(xPixels);
+        // // console.log(yPixel);
 
 
-        // xPixels.forEach(xPixel => {
-        //   colors.push(pixColor([xPixel,yPixel]));
+        // xPixels.forEach((xPixel, i) => {
+        //   // colors.push(pixColor([xPixel,yPixel]));
+        //   // console.log(xPixel + '/' + yPixel);
+        //   colors.push(robot.getPixelColor(xPixel, yPixel));
+
+        //   if(i === xPixels.length - 1){
+        //     console.log(colors);
+        //     console.timeEnd('Screen');
+        //     capture();
+        //   }
         // });
-        // console.log(colors);
 
-        // for(var i=0; i< 300; i++){
-        //   colors.push(pixColor([i, 100], true));
-        // }
 
         //ENDIF Windows:
 
         //IF other:
-        screenshot({
-          screen: displays[0].id,
-          format: 'jpg'
-        }).then((img) => {
-          console.timeEnd('Screen');
+        // screenshot({
+        //   screen: displays[0].id,
+        //   format: 'jpg'
+        // }).then((img) => {
+        //   console.timeEnd('Screen');
 
-          jimp.read(img)
-            .then((image) => {
-              image.resize(300, image.bitmap.height, jimp.RESIZE_NEAREST_NEIGHBOR);
-              var data = '';
-              image.scan(0, image.bitmap.height / 2, image.bitmap.width, 1, function (x, y, idx) {
+        //   jimp.read(img)
+        //     .then((image) => {
+        //       image.resize(300, image.bitmap.height, jimp.RESIZE_NEAREST_NEIGHBOR);
+        //       var data = '';
+        //       image.scan(0, image.bitmap.height / 2, image.bitmap.width, 1, function (x, y, idx) {
 
-                // x, y is the position of this pixel on the image
-                // idx is the position start position of this rgba tuple in the bitmap Buffer
-                var red = this.bitmap.data[idx + 0].toString(16);
-                var green = this.bitmap.data[idx + 1].toString(16);
-                var blue = this.bitmap.data[idx + 2].toString(16);
+        //         // x, y is the position of this pixel on the image
+        //         // idx is the position start position of this rgba tuple in the bitmap Buffer
+        //         var red = this.bitmap.data[idx + 0].toString(16);
+        //         var green = this.bitmap.data[idx + 1].toString(16);
+        //         var blue = this.bitmap.data[idx + 2].toString(16);
 
-                data += red.length === 2 ? red : `0${red}`;
-                data += green.length === 2 ? green : `0${green}`;
-                data += blue.length === 2 ? blue : `0${blue}`;
-                if (x === image.bitmap.width - 1) {
-                  sp108e.sendData(data);
-                  capture();
-                }
-              });
+        //         data += red.length === 2 ? red : `0${red}`;
+        //         data += green.length === 2 ? green : `0${green}`;
+        //         data += blue.length === 2 ? blue : `0${blue}`;
+        //         if (x === image.bitmap.width - 1) {
+        //           sp108e.sendData(data);
+        //           capture();
+        //         }
+        //       });
 
-            }).catch((err) => {
+        //     }).catch((err) => {
 
-            });
-        });
+        //     });
+        // });
         // ENDIF other:
 
+        var height = screenRes.get()[1] / 2;
+        // setInterval(() => {
 
+          console.time('CAP');
+          screenshotnode.saveScreenshot(0, height, screenRes.get()[0], 1, 'livecolor', () => {
+            console.timeEnd('CAP');
+            jimp.read('./livecolor')
+              .then((image) => {
+                console.log(image);
+                image.resize(300, image.bitmap.height, jimp.RESIZE_NEAREST_NEIGHBOR);
+                var data = '';
+                image.scan(0, 0, image.bitmap.width, 1, function (x, y, idx) {
+
+                  // x, y is the position of this pixel on the image
+                  // idx is the position start position of this rgba tuple in the bitmap Buffer
+                  var red = this.bitmap.data[idx + 0].toString(16);
+                  var green = this.bitmap.data[idx + 1].toString(16);
+                  var blue = this.bitmap.data[idx + 2].toString(16);
+
+                  data += red.length === 2 ? red : `0${red}`;
+                  data += green.length === 2 ? green : `0${green}`;
+                  data += blue.length === 2 ? blue : `0${blue}`;
+                  if (x === image.bitmap.width - 1) {
+                    sp108e.sendData(data);
+                    // console.log(data);
+                    capture();
+                  }
+                });
+
+              }).catch((err) => {
+                console.log(err);
+              });
+            // capture();
+          });
+        // }, 100);
 
 
       };
