@@ -37,7 +37,7 @@ var sp108e = {
             return sp108e.config.device[index];
         }
     },
-    connect: (ip = sp108e.config.ip, port = sp108e.config.port) => {
+    connect: (ip = sp108e.config.device[0].ip, port = sp108e.config.device[0].port) => {
 
         if (connected) {
             sp108e.close();
