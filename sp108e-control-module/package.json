@@ -14,6 +14,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "express": "^4.17.1",
+    "gifwrap": "^0.7.5",
     "jimp": "^0.6.4",
     "screenres": "^2.0.1",
     "screenshot-node": "^1.2.1"

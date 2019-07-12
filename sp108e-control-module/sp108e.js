@@ -5,6 +5,9 @@ const messages = require('./messages');
 const screenRes = require('screenres');
 const screenshotnode = require('screenshot-node');
 const jimp = require('jimp');
+const {
+    GifUtil
+} = require('gifwrap');
 
 var dataFailureCount = 0;
 var connected = false;
@@ -29,9 +32,14 @@ var sp108e = {
             ip: '192.168.0.23',
             port: 8189
         }],
+        // TODO track current color, pattern etc. Serialize to save between sessions.
         // TODO support multiple devices via disconnection and reconnection, or multiple sockets
         addDevice: (ip, lightCount, port = 8189) => {
-            sp108e.config.device.push({lightCount, ip, port});
+            sp108e.config.device.push({
+                lightCount,
+                ip,
+                port
+            });
         },
         getDevice: (index) => {
             return sp108e.config.device[index];
@@ -161,7 +169,59 @@ var sp108e = {
         };
         capture();
     },
-    playGif: (gif, loop) => {
+    playGif: (gif, time = 50, loop = true) => {
+        var ledFrames = [];
+
+        //TODO: Resize gif?
+        //TODO: Transparent pixels should show current lighting color - Could be used for notifications (ie. run a red bar across regular lighting color)
+
+        GifUtil.read(gif).then(inputGif => {
+
+            inputGif.frames.forEach((frame, i) => {
+
+                const buf = frame.bitmap.data;
+
+                var data = '';
+                frame.scanAllCoords((x, y, idx) => {
+
+                    var red = buf[idx + 0].toString(16);
+                    var green = buf[idx + 1].toString(16);
+                    var blue = buf[idx + 2].toString(16);
+
+                    data += red.length === 2 ? red : `0${red}`;
+                    data += green.length === 2 ? green : `0${green}`;
+                    data += blue.length === 2 ? blue : `0${blue}`;
+                    if (x === frame.bitmap.width - 1) {
+
+                        ledFrames.push(data);
+                        if (i === inputGif.frames.length - 1) {
+                            if (!connected) {
+                                sp108e.connect();
+                            }
+                    
+                            sp108e.sendMessage(messages.triggerLiveMode);
+
+                            var frameIndex = 0;
+                            var playFrames = setInterval(() => {
+                                sp108e.sendData(ledFrames[frameIndex]);
+                                frameIndex++;
+                                if(frameIndex === ledFrames.length){
+                                    frameIndex = 0;
+                                    if(!loop){
+                                        clearInterval(run);
+                                    }
+                                }
+                            }, time);
+                            playFrames();
+                        }
+                    }
+
+                });
+            });
+
+        });
+    },
+    playVideo: (video, time = 50, loop = true) => {
 
     },
     notify: (notification) => {
