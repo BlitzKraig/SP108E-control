@@ -24,9 +24,18 @@ sock.on('data', function (d) {
 
 var sp108e = {
     config: {
-        lightCount: 89,
-        ip: '192.168.0.23',
-        port: 8189
+        device: [{
+            lightCount: 89,
+            ip: '192.168.0.23',
+            port: 8189
+        }],
+        // TODO support multiple devices via disconnection and reconnection, or multiple sockets
+        addDevice: (ip, lightCount, port = 8189) => {
+            sp108e.config.device.push({lightCount, ip, port});
+        },
+        getDevice: (index) => {
+            return sp108e.config.device[index];
+        }
     },
     connect: (ip = sp108e.config.ip, port = sp108e.config.port) => {
 
@@ -81,7 +90,7 @@ var sp108e = {
             }
         }
     },
-    setSegments: (segmentCount) => {
+    setSegments: (segmentCount, deviceID = 0) => {
         if (segmentCount < 1 || segmentCount > 30) {
             return console.log('Please use a segmentcount between 1 and 30');
         }
@@ -90,7 +99,7 @@ var sp108e = {
             sp108e.connect();
         }
 
-        var lightsPerSegment = Math.ceil(sp108e.config.lightCount / segmentCount);
+        var lightsPerSegment = Math.ceil(sp108e.config.getDevice(deviceID).lightCount / segmentCount);
 
         console.log(lightsPerSegment);
         console.log(segmentCount);
