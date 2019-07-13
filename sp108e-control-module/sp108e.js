@@ -172,6 +172,7 @@ var sp108e = {
     playGif: (gif, time = 50, loop = true) => {
         var ledFrames = [];
 
+        //TODO: Reverse engineer QuitLiveMode
         //TODO: Resize gif?
         //TODO: Transparent pixels should show current lighting color - Could be used for notifications (ie. run a red bar across regular lighting color)
 
@@ -208,11 +209,10 @@ var sp108e = {
                                 if(frameIndex === ledFrames.length){
                                     frameIndex = 0;
                                     if(!loop){
-                                        clearInterval(run);
+                                        clearInterval(playFrames);
                                     }
                                 }
                             }, time);
-                            playFrames();
                         }
                     }
 
