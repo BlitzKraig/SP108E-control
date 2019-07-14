@@ -1,3 +1,4 @@
+const fs = require('fs');
 const express = require('express');
 const app = express();
 const net = require('net');
@@ -5,6 +6,7 @@ const messages = require('./messages');
 const screenRes = require('screenres');
 const screenshotnode = require('screenshot-node');
 const jimp = require('jimp');
+const portAudio = require('naudiodon');
 const {
     GifUtil
 } = require('gifwrap');
@@ -199,16 +201,16 @@ var sp108e = {
                             if (!connected) {
                                 sp108e.connect();
                             }
-                    
+
                             sp108e.sendMessage(messages.triggerLiveMode);
 
                             var frameIndex = 0;
                             var playFrames = setInterval(() => {
                                 sp108e.sendData(ledFrames[frameIndex]);
                                 frameIndex++;
-                                if(frameIndex === ledFrames.length){
+                                if (frameIndex === ledFrames.length) {
                                     frameIndex = 0;
-                                    if(!loop){
+                                    if (!loop) {
                                         clearInterval(playFrames);
                                     }
                                 }
@@ -223,6 +225,55 @@ var sp108e = {
     },
     playVideo: (video, time = 50, loop = true) => {
 
+    },
+    audio: {
+        listDevices: () => {
+            console.log(portAudio.getDevices());
+        },
+        listHostAPIs: () => {
+            console.log(portAudio.getHostAPIs());
+        },
+        beginDetection: (deviceID = -1) => {
+            var ai = new portAudio.AudioIO({
+                inOptions: {
+                    channelCount: 2,
+                    sampleFormat: portAudio.SampleFormat16Bit,
+                    sampleRate: 48000,
+                    deviceId: deviceID // Use -1 or omit the deviceId to select the default device
+                }
+            });
+
+            var AudioBuffer = require('audio-buffer');
+            var audioBuffer = AudioBuffer(ai, {sampleRate: 48000, numberOfChannels: 2});
+            function decodeBuffer (buffer) {
+                return Array.from(
+                  { length: buffer.length / 2 },
+                  (v, i) => buffer.readInt16LE(i * 2) / (2 ** 15)
+                );
+              }
+
+            // Create a write stream to write out to a raw audio file
+            //   var ws = fs.createWriteStream('rawAudio.raw');
+
+            //Start streaming
+            //   ai.pipe(ws);
+            //   ai.resume();
+            ai.start();
+
+            ai.on('data', (chunk) => {
+                // var complete = 0;
+
+                // for (let index = 0; index < 2; index++) {
+                //     console.log(index + ': ' + chunk[index]);
+                //     complete += chunk[index];
+
+                // }
+                //       console.log(complete);
+                // console.log(decodeBuffer(chunk));
+                console.log(audioBuffer.getChannelData(0));
+            });
+
+        }
     },
     notify: (notification) => {
 
