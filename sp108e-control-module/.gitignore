@@ -1,3 +1,4 @@
 node_modules/
 .livecolor
 *.exe
+.DS_Store
