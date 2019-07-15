@@ -23,7 +23,7 @@ var sock = new net.Socket();
 var waitingForResponse = false;
 
 sock.on('data', function (d) {
-    console.log('RESPONDED');
+    // console.log('RESPONDED');
     waitingForResponse = false;
 });
 
@@ -238,18 +238,39 @@ var sp108e = {
                 inOptions: {
                     channelCount: 2,
                     sampleFormat: portAudio.SampleFormat16Bit,
-                    sampleRate: 48000,
+                    sampleRate: 96000,
                     deviceId: deviceID // Use -1 or omit the deviceId to select the default device
                 }
             });
 
-            var AudioBuffer = require('audio-buffer');
-            var audioBuffer = AudioBuffer(ai, {sampleRate: 48000, numberOfChannels: 2});
+            // var AudioBuffer = require('audio-buffer');
+            // var audioBuffer = AudioBuffer(ai, {sampleRate: 48000, numberOfChannels: 2});
             function decodeBuffer (buffer) {
-                return Array.from(
-                  { length: buffer.length / 2 },
-                  (v, i) => buffer.readInt16LE(i * 2) / (2 ** 15)
-                );
+                // return Array.from(
+                // //   { length: buffer.length / 1024 },
+                // {length: 1},
+                //   (v, i) => parseInt(255 * Math.abs(buffer.readInt16LE(i * 2) / (2 ** 15)))
+                // )[0];
+                // console.log(parseInt(255 * Math.abs(buffer.readInt16LE(0) / (2 ** 15))))
+                // console.log(parseInt(255 * Math.abs(buffer.readInt16LE(buffer.length / 2) / (2 ** 15))))
+                // console.log(parseInt(255 * Math.abs(buffer.readInt16LE(buffer.length - 2) / (2 ** 15))))
+                // if(parseInt(255 * Math.abs(buffer.readInt16LE(0) / (2 ** 15))) > 100){
+                //     console.log('1');
+                // }
+                // if(parseInt(255 * Math.abs(buffer.readInt16LE(buffer.length / 2) / (2 ** 15))) > 100){
+                //     console.log('2');
+                // }
+                // if(parseInt(255 * Math.abs(buffer.readInt16LE(buffer.length - 2) / (2 ** 15))) > 100){
+                //     console.log('3');
+                // }
+                // console.log('---');
+
+                // console.log(parseInt(255 * Math.abs(buffer.readInt16LE(buffer.length / 2) / (2 ** 15))))
+                // return parseInt(255 * Math.abs(buffer.readInt16LE(0) / (2 ** 15)))
+                return parseInt(300 * Math.abs(buffer.readInt16LE(0) / (2 ** 15)))
+
+                //TODO smooth between values
+                
               }
 
             // Create a write stream to write out to a raw audio file
@@ -258,7 +279,9 @@ var sp108e = {
             //Start streaming
             //   ai.pipe(ws);
             //   ai.resume();
+            sp108e.sendMessage(messages.triggerLiveMode);
             ai.start();
+            
 
             ai.on('data', (chunk) => {
                 // var complete = 0;
@@ -269,8 +292,38 @@ var sp108e = {
 
                 // }
                 //       console.log(complete);
-                // console.log(decodeBuffer(chunk));
-                console.log(audioBuffer.getChannelData(0));
+                var amplitude = decodeBuffer(chunk)
+
+
+                // if(amplitude < 40){
+                //     amplitude = 40;
+                // }
+                // amplitude = amplitude.toString(16);
+
+
+                // console.log(amplistude);
+                // console.log(amplitude.toString(16));
+
+                // var colorString = amplitude.length === 2 ? amplitude : `0${amplitude}`
+                // colorString = `${colorString}00FF`
+                var colorString = 'FF0000';
+
+                // console.log(colorString * 300);
+                
+                var secondaryColor = 'FFFFFF';
+                
+                
+                // var repeated = colorString.repeat(300);
+                var repeated = colorString.repeat(amplitude);
+                repeated += secondaryColor.repeat(300-amplitude);
+
+                console.log(amplitude);
+
+                // console.log(repeated);
+                // colorString = `${colorString}${colorString}${colorString}`
+                sp108e.sendData(repeated);
+                // sp108e.sendMessage(messages.changeColor.custom(`${colorString}${colorString}${colorString}`));
+                // console.log(audioBuffer.getChannelData(0));
             });
 
         }
