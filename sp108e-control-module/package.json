@@ -13,10 +13,17 @@
   "author": "Craig C",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
+    "audio-activity": "^1.0.0",
+    "audio-buffer": "^4.0.4",
+    "decibels": "^2.0.0",
     "express": "^4.17.1",
+    "fourier-transform": "^1.1.2",
     "gifwrap": "^0.7.5",
     "jimp": "^0.6.4",
+    "naudiodon": "^2.1.0",
+    "react-native-sound-level": "^1.1.0",
     "screenres": "^2.0.1",
-    "screenshot-node": "^1.2.1"
+    "screenshot-node": "^1.2.1",
+    "web-audio-api": "^0.2.2"
   }
 }

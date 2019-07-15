@@ -1,3 +1,4 @@
+const fs = require('fs');
 const express = require('express');
 const app = express();
 const net = require('net');
@@ -5,9 +6,12 @@ const messages = require('./messages');
 const screenRes = require('screenres');
 const screenshotnode = require('screenshot-node');
 const jimp = require('jimp');
+const portAudio = require('naudiodon');
 const {
     GifUtil
 } = require('gifwrap');
+
+const bandGenerator = require('./utils/bandgenerator');
 
 var dataFailureCount = 0;
 var connected = false;
@@ -21,7 +25,7 @@ var sock = new net.Socket();
 var waitingForResponse = false;
 
 sock.on('data', function (d) {
-    console.log('RESPONDED');
+    // console.log('RESPONDED');
     waitingForResponse = false;
 });
 
@@ -199,16 +203,16 @@ var sp108e = {
                             if (!connected) {
                                 sp108e.connect();
                             }
-                    
+
                             sp108e.sendMessage(messages.triggerLiveMode);
 
                             var frameIndex = 0;
                             var playFrames = setInterval(() => {
                                 sp108e.sendData(ledFrames[frameIndex]);
                                 frameIndex++;
-                                if(frameIndex === ledFrames.length){
+                                if (frameIndex === ledFrames.length) {
                                     frameIndex = 0;
-                                    if(!loop){
+                                    if (!loop) {
                                         clearInterval(playFrames);
                                     }
                                 }
@@ -222,6 +226,125 @@ var sp108e = {
         });
     },
     playVideo: (video, time = 50, loop = true) => {
+
+    },
+    audioDetection: (type = 'fourcolor', pastel = false) => {
+
+
+        // var color1 = 'FF0000';
+        // var color2 = '00FF00';
+        // var color3 = '0000FF';
+        // var color4 = 'FF00FF';
+        // var background = 'AAAAAA';
+
+        sp108e.sendMessage(messages.triggerLiveMode);
+
+        if (type === 'fourcolor' || type === 'fourcolormix' || type === 'fourcolormixmoving') {
+            var moveCounter = 0;
+
+            bandGenerator((band) => {
+
+                // 75 pixels of each color, color intensity decided by band
+                // var color1 = `${255 * band[0]}`
+                //color1.repeat(75);
+
+                var color1 = parseInt(255 * band[0]).toString(16);
+                if (color1.length < 2) {
+                    color1 = `0${color1}`;
+                }
+                // TODO Fix pastel, should reduce from standard (88) or something like that
+                color1 = pastel?`${color1}8888`:`${color1}0000`;
+
+                var color2 = parseInt(255 * band[1]).toString(16);
+                if (color2.length < 2) {
+                    color2 = `0${color2}`;
+                }
+                color2 = pastel?`88${color2}88`:`00${color2}00`;
+
+                var color3 = parseInt(255 * band[2]).toString(16);
+                if (color3.length < 2) {
+                    color3 = `0${color3}`;
+                }
+                color3 = pastel?`8888${color3}`:`0000${color3}`;
+
+                var color4 = parseInt(255 * band[3]).toString(16);
+                if (color4.length < 2) {
+                    color4 = `0${color4}`;
+                }
+                color4 = pastel?`${color4}88${color4}`:`${color4}00${color4}`;
+
+                var data;
+                if (type === 'fourcolormix' || type === 'fourcolormixmoving') {
+                    data = color1.repeat(15) + color2.repeat(15) + color3.repeat(15) + color4.repeat(15);
+                    data = data.repeat(5);
+
+                    // console.log(data.length); = 1800
+
+                    if (type === 'fourcolormixmoving') {
+                        var movedData = data.substr(1800 - (24 * moveCounter), 1800) + data.substring(0, 1800 - (6 * moveCounter))
+                        data = movedData;
+                        if(!waitingForResponse){
+                            // TODO Send data regularly (incl movement), have this stuff simply update the data separately. Should keep it smoother.
+                        moveCounter++;
+                        if(moveCounter == 15){
+                            moveCounter = 0;
+                        }
+                    }
+                    }
+
+                } else {
+
+                    data = color1.repeat(75) + color2.repeat(75) + color3.repeat(75) + color4.repeat(75);
+                }
+                // console.log(data);
+
+                sp108e.sendData(data);
+            }, true)
+
+        } else if (type === 'twocolor') {
+            bandGenerator((band) => {
+
+                // 75 pixels of each color, color intensity decided by band
+                // var color1 = `${255 * band[0]}`
+                //color1.repeat(75);
+
+                var color1 = parseInt(255 * band[0]).toString(16);
+                if (color1.length < 2) {
+                    color1 = `0${color1}`;
+                }
+                color1 = `${color1}0000`;
+
+                var color2 = parseInt(255 * band[1]).toString(16);
+                if (color2.length < 2) {
+                    color2 = `0${color2}`;
+                }
+                color2 = `00${color2}00`;
+
+                var color3 = parseInt(255 * band[2]).toString(16);
+                if (color3.length < 2) {
+                    color3 = `0${color3}`;
+                }
+                color3 = `0000${color3}`;
+
+                var color4 = parseInt(255 * band[3]).toString(16);
+                if (color4.length < 2) {
+                    color4 = `0${color4}`;
+                }
+                color4 = `${color4}00${color4}`;
+
+                var data = color1.repeat(75) + color2.repeat(75) + color3.repeat(75) + color4.repeat(75);
+                // console.log(data);
+
+                sp108e.sendData(data);
+            }, true)
+        }
+
+        // var repeated = colorString.repeat(amplitude);
+        // repeated += secondaryColor.repeat(300 - amplitude);
+
+        // console.log(amplitude);
+
+        // sp108e.sendData(repeated);
 
     },
     notify: (notification) => {
