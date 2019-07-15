@@ -299,7 +299,7 @@ var sp108e = {
                 // console.log(data);
 
                 sp108e.sendData(data);
-            }, true)
+            }, true, 1, 1)
 
         } else if (type === 'twocolor') {
             bandGenerator((band) => {

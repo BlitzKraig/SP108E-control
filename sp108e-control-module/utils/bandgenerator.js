@@ -2,7 +2,7 @@ var coreaudio = require('./node-core-audio');
 
 //Create a core audio engine
 
-var start = (callback, smooth = false, suppressSilence = true, boostLow = 2, boostHigh = 2)=>{
+var start = (callback, smooth = false, boostLow = 2, boostHigh = 2)=>{
 var engine = coreaudio.createNewAudioEngine();
 engine.setOptions({
     inputChannels: 1,
