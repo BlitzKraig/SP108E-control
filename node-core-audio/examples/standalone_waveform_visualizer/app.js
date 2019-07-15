@@ -39,23 +39,27 @@ engine.addAudioCallback(function (buffer) {
     //     }
     // });
 
-    var lowMag = 0;
-    var midMag = 0;
-    var highMag = 0;
+    var fifths = [0,0,0,0,0];
     for (var i = 0; i < spectrum.length; i++) {
-        if (i < spectrum.length / 3) {
-            lowMag += spectrum[i];
-        } else if (i < spectrum.length / 3 * 2) {
-            midMag += spectrum[i];
+        if (i < spectrum.length / 5) {
+            fifths[0] += spectrum[i];
+        } else if (i < spectrum.length / 5 * 2) {
+            fifths[1] += spectrum[i];
+        } else if (i < spectrum.length / 5 * 3) {
+            fifths[2] += spectrum[i];
+        } else if (i < spectrum.length / 5 * 4) {
+            fifths[3] += spectrum[i];
         } else {
-            highMag += spectrum[i];
+            fifths[4] += spectrum[i];
         }
         if (i === spectrum.length - 1) {
-            lowMag = lowMag / (spectrum.length / 3) * 2;
-            midMag = midMag / (spectrum.length / 3) * 2;
-            highMag = highMag / (spectrum.length / 3) * 2;
+            fifths[0] = fifths[0] / (spectrum.length / 5) * 2;
+            fifths[1] = fifths[1] / (spectrum.length / 5) * 2;
+            fifths[2] = fifths[2] / (spectrum.length / 5) * 2;
+            fifths[3] = fifths[3] / (spectrum.length / 5) * 2;
+            fifths[4] = fifths[4] / (spectrum.length / 5) * 2;
             // * 2 to boost
-            console.log(`Low:${lowMag.toFixed(2)} Mid:${midMag.toFixed(2)} High:${highMag.toFixed(2)}`);
+            console.log(`First:${fifths[0].toFixed(2)} Second:${fifths[1].toFixed(2)} Third:${fifths[2].toFixed(2)} Fourth:${fifths[3].toFixed(2)} Fifth:${fifths[4].toFixed(2)} `);
         }
     }
     //convert to decibels
@@ -96,8 +100,8 @@ engine.addAudioCallback(function (buffer) {
 
 
 
-    // return(buffer);
-    return (-1);
+    return(buffer);
+    // return (-1);
 
 
     // var output = [];
