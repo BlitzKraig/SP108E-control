@@ -1,12 +1,16 @@
 // Outputs sine waves panning left & right while showing microphone input on screen
 
-var coreaudio  = require('../../');
+var coreaudio = require('../../');
 // var qt = require('node-qt');
 
 
 //Create a core audio engine
 var engine = coreaudio.createNewAudioEngine();
-engine.setOptions({ inputChannels: 1, outputChannels: 1, interleaved: true });
+engine.setOptions({
+    inputChannels: 1,
+    outputChannels: 1,
+    interleaved: true
+});
 
 var sample = 0;
 var ampBuffer = new Float32Array(4000);
@@ -19,25 +23,45 @@ var frequency = 440;
 var size = 256;
 var sampleRate = 44100;
 
-engine.addAudioCallback(function(buffer) {
+engine.addAudioCallback(function (buffer) {
     // console.log(buffer);
 
 
-//get normalized magnitudes for frequencies from 0 to 22050 with interval 44100/1024 ≈ 43Hz
-var spectrum = ft(buffer);
-// console.log(spectrum.length);
+    //get normalized magnitudes for frequencies from 0 to 22050 with interval 44100/1024 ≈ 43Hz
+    var spectrum = ft(buffer);
+    // console.log(spectrum.length);
 
-spectrum.forEach((spec, i) => {
-    // console.log(spec);
-    if(spec > 0.1){
-        // Play tone or music, see which segment lights up
-        console.log(i);
+    // spectrum.forEach((spec, i) => {
+    //     // console.log(spec);
+    //     if(spec > 0.1){
+    //         // Play tone or music, see which segment lights up
+    //         console.log(i);
+    //     }
+    // });
+
+    var lowMag = 0;
+    var midMag = 0;
+    var highMag = 0;
+    for (var i = 0; i < spectrum.length; i++) {
+        if (i < spectrum.length / 3) {
+            lowMag += spectrum[i];
+        } else if (i < spectrum.length / 3 * 2) {
+            midMag += spectrum[i];
+        } else {
+            highMag += spectrum[i];
+        }
+        if (i === spectrum.length - 1) {
+            lowMag = lowMag / (spectrum.length / 3) * 2;
+            midMag = midMag / (spectrum.length / 3) * 2;
+            highMag = highMag / (spectrum.length / 3) * 2;
+            // * 2 to boost
+            console.log(`Low:${lowMag.toFixed(2)} Mid:${midMag.toFixed(2)} High:${highMag.toFixed(2)}`);
+        }
     }
-});
-//convert to decibels
-// var decibels = spectrum.map((value) => db.fromGain(value));
+    //convert to decibels
+    // var decibels = spectrum.map((value) => db.fromGain(value));
 
-// console.log(decibels);
+    // console.log(decibels);
     for (var i = 0; i < buffer.length; i++) {
 
 
@@ -56,24 +80,24 @@ spectrum.forEach((spec, i) => {
 
         // }
 
-                // path.lineTo(new qt.QPointF(w * i / ampBuffer.length, h / 2 + ampBuffer[i] * h / 3.0));
-                // console.log(w * i / ampBuffer.length, h / 2 + ampBuffer[i] * h / 3.0);
+        // path.lineTo(new qt.QPointF(w * i / ampBuffer.length, h / 2 + ampBuffer[i] * h / 3.0));
+        // console.log(w * i / ampBuffer.length, h / 2 + ampBuffer[i] * h / 3.0);
 
         //         if(i === ampBuffer.length - 1) {
         //             doAudio();
         //         }
-            }
+    }
 
-            // if(buffer[0] > 0.1){
-            //  console.log(
-            //     parseInt(255 * Math.abs(buffer[0]))
-            //     );
-            //  }
+    // if(buffer[0] > 0.1){
+    //  console.log(
+    //     parseInt(255 * Math.abs(buffer[0]))
+    //     );
+    //  }
 
 
 
     // return(buffer);
-    return(-1);
+    return (-1);
 
 
     // var output = [];
@@ -111,8 +135,8 @@ spectrum.forEach((spec, i) => {
 //     for (var i = 0; i < ampBuffer.length; i++) {
 //         console.log(ampBuffer[i]);
 
-        // path.lineTo(new qt.QPointF(w * i / ampBuffer.length, h / 2 + ampBuffer[i] * h / 3.0));
-        // console.log(w * i / ampBuffer.length, h / 2 + ampBuffer[i] * h / 3.0);
+// path.lineTo(new qt.QPointF(w * i / ampBuffer.length, h / 2 + ampBuffer[i] * h / 3.0));
+// console.log(w * i / ampBuffer.length, h / 2 + ampBuffer[i] * h / 3.0);
 
 //         if(i === ampBuffer.length - 1) {
 //             doAudio();
