@@ -11,17 +11,50 @@ engine.setOptions({ inputChannels: 1, outputChannels: 1, interleaved: true });
 var sample = 0;
 var ampBuffer = new Float32Array(4000);
 
+
+var ft = require('fourier-transform');
+var db = require('decibels');
+
+var frequency = 440;
+var size = 256;
+var sampleRate = 44100;
+
 engine.addAudioCallback(function(buffer) {
     // console.log(buffer);
 
-    for (var i = 0; i < buffer.length; i++) {
-        //         console.log(ampBuffer[i]);
 
-        if(buffer[i] > 0.4){
-        console.log(
-            parseInt(255 * Math.abs(buffer[i]))
-            );
-        }
+//get normalized magnitudes for frequencies from 0 to 22050 with interval 44100/1024 ≈ 43Hz
+var spectrum = ft(buffer);
+// console.log(spectrum.length);
+
+spectrum.forEach((spec, i) => {
+    // console.log(spec);
+    if(spec > 0.1){
+        // Play tone or music, see which segment lights up
+        console.log(i);
+    }
+});
+//convert to decibels
+// var decibels = spectrum.map((value) => db.fromGain(value));
+
+// console.log(decibels);
+    for (var i = 0; i < buffer.length; i++) {
+
+
+
+        //         console.log(ampBuffer[i]);
+        // if(buffer[0][i] > 0.4){
+
+
+        // console.log(
+        //     parseInt(255 * Math.abs(buffer[i]))
+        //     );
+
+
+
+
+
+        // }
 
                 // path.lineTo(new qt.QPointF(w * i / ampBuffer.length, h / 2 + ampBuffer[i] * h / 3.0));
                 // console.log(w * i / ampBuffer.length, h / 2 + ampBuffer[i] * h / 3.0);
@@ -38,7 +71,11 @@ engine.addAudioCallback(function(buffer) {
             //  }
 
 
-    return(buffer);
+
+    // return(buffer);
+    return(-1);
+
+
     // var output = [];
     // for (var i = 0; i < buffer.length; i++, sample++) {
     //     //Pan two sound-waves back and forth, opposing
