@@ -11,6 +11,8 @@ const {
     GifUtil
 } = require('gifwrap');
 
+const bandGenerator = require('./utils/bandgenerator');
+
 var dataFailureCount = 0;
 var connected = false;
 
@@ -226,107 +228,124 @@ var sp108e = {
     playVideo: (video, time = 50, loop = true) => {
 
     },
-    audio: {
-        listDevices: () => {
-            console.log(portAudio.getDevices());
-        },
-        listHostAPIs: () => {
-            console.log(portAudio.getHostAPIs());
-        },
-        beginDetection: (deviceID = -1) => {
-            var ai = new portAudio.AudioIO({
-                inOptions: {
-                    channelCount: 2,
-                    sampleFormat: portAudio.SampleFormat16Bit,
-                    sampleRate: 96000,
-                    deviceId: deviceID // Use -1 or omit the deviceId to select the default device
+    audioDetection: (type = 'fourcolor', pastel = false) => {
+
+
+        // var color1 = 'FF0000';
+        // var color2 = '00FF00';
+        // var color3 = '0000FF';
+        // var color4 = 'FF00FF';
+        // var background = 'AAAAAA';
+
+        sp108e.sendMessage(messages.triggerLiveMode);
+
+        if (type === 'fourcolor' || type === 'fourcolormix' || type === 'fourcolormixmoving') {
+            var moveCounter = 0;
+
+            bandGenerator((band) => {
+
+                // 75 pixels of each color, color intensity decided by band
+                // var color1 = `${255 * band[0]}`
+                //color1.repeat(75);
+
+                var color1 = parseInt(255 * band[0]).toString(16);
+                if (color1.length < 2) {
+                    color1 = `0${color1}`;
                 }
-            });
+                // TODO Fix pastel, should reduce from standard (88) or something like that
+                color1 = pastel?`${color1}8888`:`${color1}0000`;
 
-            // var AudioBuffer = require('audio-buffer');
-            // var audioBuffer = AudioBuffer(ai, {sampleRate: 48000, numberOfChannels: 2});
-            function decodeBuffer (buffer) {
-                // return Array.from(
-                // //   { length: buffer.length / 1024 },
-                // {length: 1},
-                //   (v, i) => parseInt(255 * Math.abs(buffer.readInt16LE(i * 2) / (2 ** 15)))
-                // )[0];
-                // console.log(parseInt(255 * Math.abs(buffer.readInt16LE(0) / (2 ** 15))))
-                // console.log(parseInt(255 * Math.abs(buffer.readInt16LE(buffer.length / 2) / (2 ** 15))))
-                // console.log(parseInt(255 * Math.abs(buffer.readInt16LE(buffer.length - 2) / (2 ** 15))))
-                // if(parseInt(255 * Math.abs(buffer.readInt16LE(0) / (2 ** 15))) > 100){
-                //     console.log('1');
-                // }
-                // if(parseInt(255 * Math.abs(buffer.readInt16LE(buffer.length / 2) / (2 ** 15))) > 100){
-                //     console.log('2');
-                // }
-                // if(parseInt(255 * Math.abs(buffer.readInt16LE(buffer.length - 2) / (2 ** 15))) > 100){
-                //     console.log('3');
-                // }
-                // console.log('---');
+                var color2 = parseInt(255 * band[1]).toString(16);
+                if (color2.length < 2) {
+                    color2 = `0${color2}`;
+                }
+                color2 = pastel?`88${color2}88`:`00${color2}00`;
 
-                // console.log(parseInt(255 * Math.abs(buffer.readInt16LE(buffer.length / 2) / (2 ** 15))))
-                // return parseInt(255 * Math.abs(buffer.readInt16LE(0) / (2 ** 15)))
-                return parseInt(300 * Math.abs(buffer.readInt16LE(0) / (2 ** 15)))
+                var color3 = parseInt(255 * band[2]).toString(16);
+                if (color3.length < 2) {
+                    color3 = `0${color3}`;
+                }
+                color3 = pastel?`8888${color3}`:`0000${color3}`;
 
-                //TODO smooth between values
-                
-              }
+                var color4 = parseInt(255 * band[3]).toString(16);
+                if (color4.length < 2) {
+                    color4 = `0${color4}`;
+                }
+                color4 = pastel?`${color4}88${color4}`:`${color4}00${color4}`;
 
-            // Create a write stream to write out to a raw audio file
-            //   var ws = fs.createWriteStream('rawAudio.raw');
+                var data;
+                if (type === 'fourcolormix' || type === 'fourcolormixmoving') {
+                    data = color1.repeat(15) + color2.repeat(15) + color3.repeat(15) + color4.repeat(15);
+                    data = data.repeat(5);
 
-            //Start streaming
-            //   ai.pipe(ws);
-            //   ai.resume();
-            sp108e.sendMessage(messages.triggerLiveMode);
-            ai.start();
-            
+                    // console.log(data.length); = 1800
 
-            ai.on('data', (chunk) => {
-                // var complete = 0;
+                    if (type === 'fourcolormixmoving') {
+                        var movedData = data.substr(1800 - (24 * moveCounter), 1800) + data.substring(0, 1800 - (6 * moveCounter))
+                        data = movedData;
+                        if(!waitingForResponse){
+                            // TODO Send data regularly (incl movement), have this stuff simply update the data separately. Should keep it smoother.
+                        moveCounter++;
+                        if(moveCounter == 15){
+                            moveCounter = 0;
+                        }
+                    }
+                    }
 
-                // for (let index = 0; index < 2; index++) {
-                //     console.log(index + ': ' + chunk[index]);
-                //     complete += chunk[index];
+                } else {
 
-                // }
-                //       console.log(complete);
-                var amplitude = decodeBuffer(chunk)
+                    data = color1.repeat(75) + color2.repeat(75) + color3.repeat(75) + color4.repeat(75);
+                }
+                // console.log(data);
 
+                sp108e.sendData(data);
+            }, true)
 
-                // if(amplitude < 40){
-                //     amplitude = 40;
-                // }
-                // amplitude = amplitude.toString(16);
+        } else if (type === 'twocolor') {
+            bandGenerator((band) => {
 
+                // 75 pixels of each color, color intensity decided by band
+                // var color1 = `${255 * band[0]}`
+                //color1.repeat(75);
 
-                // console.log(amplistude);
-                // console.log(amplitude.toString(16));
+                var color1 = parseInt(255 * band[0]).toString(16);
+                if (color1.length < 2) {
+                    color1 = `0${color1}`;
+                }
+                color1 = `${color1}0000`;
 
-                // var colorString = amplitude.length === 2 ? amplitude : `0${amplitude}`
-                // colorString = `${colorString}00FF`
-                var colorString = 'FF0000';
+                var color2 = parseInt(255 * band[1]).toString(16);
+                if (color2.length < 2) {
+                    color2 = `0${color2}`;
+                }
+                color2 = `00${color2}00`;
 
-                // console.log(colorString * 300);
-                
-                var secondaryColor = 'FFFFFF';
-                
-                
-                // var repeated = colorString.repeat(300);
-                var repeated = colorString.repeat(amplitude);
-                repeated += secondaryColor.repeat(300-amplitude);
+                var color3 = parseInt(255 * band[2]).toString(16);
+                if (color3.length < 2) {
+                    color3 = `0${color3}`;
+                }
+                color3 = `0000${color3}`;
 
-                console.log(amplitude);
+                var color4 = parseInt(255 * band[3]).toString(16);
+                if (color4.length < 2) {
+                    color4 = `0${color4}`;
+                }
+                color4 = `${color4}00${color4}`;
 
-                // console.log(repeated);
-                // colorString = `${colorString}${colorString}${colorString}`
-                sp108e.sendData(repeated);
-                // sp108e.sendMessage(messages.changeColor.custom(`${colorString}${colorString}${colorString}`));
-                // console.log(audioBuffer.getChannelData(0));
-            });
+                var data = color1.repeat(75) + color2.repeat(75) + color3.repeat(75) + color4.repeat(75);
+                // console.log(data);
 
+                sp108e.sendData(data);
+            }, true)
         }
+
+        // var repeated = colorString.repeat(amplitude);
+        // repeated += secondaryColor.repeat(300 - amplitude);
+
+        // console.log(amplitude);
+
+        // sp108e.sendData(repeated);
+
     },
     notify: (notification) => {
 
