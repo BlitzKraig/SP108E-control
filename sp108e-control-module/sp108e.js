@@ -350,15 +350,15 @@ var sp108e = {
             }, true);
         } else if (type === 'hilometer') {
             bandGenerator((band) => {
-                var background = 'FFFFFF';
+                var background = 'FF6D26';
                 var colors = [];
                 colors.push({
-                    color: 'FF0000',
-                    count: parseInt(150 * band[0])
+                    color: 'FF8844',
+                    count: parseInt(150 * band[3])
                 });
                 colors.push({
-                    color: '00FF00',
-                    count: parseInt(150 * band[3])
+                    color: 'DD3311',
+                    count: parseInt(150 * band[0])
                 });
 
 
@@ -374,7 +374,7 @@ var sp108e = {
                 data = data.match(/.{6}/g).reverse().join('') + data;
 
                 sp108e.sendData(data);
-            }, true);
+            }, false, 1, 1);
 
         }
 

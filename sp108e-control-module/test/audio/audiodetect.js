@@ -1,4 +1,4 @@
 const sp108e = require('../../sp108e');
 const messages = require('../../messages');
 
-sp108e.audioDetection('fourcolormixmoving');
+sp108e.audioDetection('hilometer');
