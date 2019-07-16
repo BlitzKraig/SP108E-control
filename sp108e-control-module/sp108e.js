@@ -28,7 +28,7 @@ sock.on('data', function (d) {
 var sp108e = {
     config: {
         device: [{
-            lightCount: 89,
+            lightCount: 90,
             ip: '192.168.0.23',
             port: 8189
         }],
@@ -368,6 +368,44 @@ var sp108e = {
                     data += `${background.repeat(150 - colors[1].count)}`;
                 } else {
                     data += `${background.repeat(150 - colors[0].count)}`;
+                }
+
+                // CHECK THIS LOGIC
+                data = data.match(/.{6}/g).reverse().join('') + data;
+
+                sp108e.sendData(data);
+            }, false, 1, 1);
+
+        } else if (type === 'hilometerlightcount') {
+
+            var lights = sp108e.config.device.lightCount;
+
+            lights = lights % 2 === 0?lights:lights+1;
+
+            bandGenerator((band) => {
+                var background = 'FF6D26';
+                var colors = [];
+                colors.push({
+                    color: 'FF8844',
+                    count: parseInt((150 / (lights / 2)) * ((lights / 2 ) * band[3]))
+                });
+                colors.push({
+                    color: 'DD3311',
+                    count: parseInt((150 / (lights / 2)) * ((lights / 2 ) * band[0]))
+                });
+
+
+                var data = `${colors[0].color.repeat(colors[0].count)}`;
+                if (colors[1].count > colors[0].count) {
+                    data += `${colors[1].color.repeat(colors[1].count - colors[0].count)}`;
+                    data += `${background.repeat(150 - colors[1].count)}`;
+                } else {
+                    data += `${background.repeat(150 - colors[0].count)}`;
+                }
+                if(data.length > 900){
+                    data += '0'.repeat(900 - data.length);
+                } else if (data.length < 900){
+                    data = data.substr(0, 900);
                 }
 
                 // CHECK THIS LOGIC
