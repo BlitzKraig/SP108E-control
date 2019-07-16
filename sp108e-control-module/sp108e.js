@@ -1,12 +1,8 @@
-const fs = require('fs');
-const express = require('express');
-const app = express();
 const net = require('net');
 const messages = require('./messages');
 const screenRes = require('screenres');
 const screenshotnode = require('screenshot-node');
 const jimp = require('jimp');
-const portAudio = require('naudiodon');
 const {
     GifUtil
 } = require('gifwrap');
@@ -253,25 +249,25 @@ var sp108e = {
                     color1 = `0${color1}`;
                 }
                 // TODO Fix pastel, should reduce from standard (88) or something like that
-                color1 = pastel?`${color1}8888`:`${color1}0000`;
+                color1 = pastel ? `${color1}8888` : `${color1}0000`;
 
                 var color2 = parseInt(255 * band[1]).toString(16);
                 if (color2.length < 2) {
                     color2 = `0${color2}`;
                 }
-                color2 = pastel?`88${color2}88`:`00${color2}00`;
+                color2 = pastel ? `88${color2}88` : `00${color2}00`;
 
                 var color3 = parseInt(255 * band[2]).toString(16);
                 if (color3.length < 2) {
                     color3 = `0${color3}`;
                 }
-                color3 = pastel?`8888${color3}`:`0000${color3}`;
+                color3 = pastel ? `8888${color3}` : `0000${color3}`;
 
                 var color4 = parseInt(255 * band[3]).toString(16);
                 if (color4.length < 2) {
                     color4 = `0${color4}`;
                 }
-                color4 = pastel?`${color4}88${color4}`:`${color4}00${color4}`;
+                color4 = pastel ? `${color4}88${color4}` : `${color4}00${color4}`;
 
                 var data;
                 if (type === 'fourcolormix' || type === 'fourcolormixmoving') {
@@ -281,15 +277,15 @@ var sp108e = {
                     // console.log(data.length); = 1800
 
                     if (type === 'fourcolormixmoving') {
-                        var movedData = data.substr(1800 - (24 * moveCounter), 1800) + data.substring(0, 1800 - (6 * moveCounter))
+                        var movedData = data.substr(1800 - (24 * moveCounter), 1800) + data.substring(0, 1800 - (6 * moveCounter));
                         data = movedData;
-                        if(!waitingForResponse){
+                        if (!waitingForResponse) {
                             // TODO Send data regularly (incl movement), have this stuff simply update the data separately. Should keep it smoother.
-                        moveCounter++;
-                        if(moveCounter == 15){
-                            moveCounter = 0;
+                            moveCounter++;
+                            if (moveCounter == 15) {
+                                moveCounter = 0;
+                            }
                         }
-                    }
                     }
 
                 } else {
@@ -299,7 +295,7 @@ var sp108e = {
                 // console.log(data);
 
                 sp108e.sendData(data);
-            }, true, 1, 1)
+            }, true, 1, 1);
 
         } else if (type === 'twocolor') {
             bandGenerator((band) => {
@@ -308,43 +304,51 @@ var sp108e = {
                 // var color1 = `${255 * band[0]}`
                 //color1.repeat(75);
 
-                var color1 = parseInt(255 * band[0]).toString(16);
+                var color1 = parseInt(255 * (band[0] + band[1] + band[2] / 3)).toString(16);
                 if (color1.length < 2) {
                     color1 = `0${color1}`;
                 }
                 color1 = `${color1}0000`;
 
-                var color2 = parseInt(255 * band[1]).toString(16);
+                var color2 = parseInt(255 * band[4]).toString(16);
                 if (color2.length < 2) {
                     color2 = `0${color2}`;
                 }
                 color2 = `00${color2}00`;
 
-                var color3 = parseInt(255 * band[2]).toString(16);
-                if (color3.length < 2) {
-                    color3 = `0${color3}`;
-                }
-                color3 = `0000${color3}`;
-
-                var color4 = parseInt(255 * band[3]).toString(16);
-                if (color4.length < 2) {
-                    color4 = `0${color4}`;
-                }
-                color4 = `${color4}00${color4}`;
-
-                var data = color1.repeat(75) + color2.repeat(75) + color3.repeat(75) + color4.repeat(75);
-                // console.log(data);
+                var data = color1.repeat(150) + color2.repeat(150);
 
                 sp108e.sendData(data);
-            }, true)
+            }, true);
+        } else if (type === 'fourcolormeter') {
+            bandGenerator((band) => {
+                var background = 'FFFFFF';
+                var colors = [];
+                colors.push({
+                    color: 'FF0000',
+                    count: parseInt(75 * band[0])
+                });
+                colors.push({
+                    color: '00FF00',
+                    count: parseInt(75 * band[1])
+                });
+                colors.push({
+                    color: '0000FF',
+                    count: parseInt(75 * band[2])
+                });
+                colors.push({
+                    color: 'FF00FF',
+                    count: parseInt(75 * band[3])
+                });
+
+                var data = '';
+                colors.forEach(color => {
+                    data += `${color.color.repeat(color.count)}${background.repeat(75 - color.count)}`;
+                });
+
+                sp108e.sendData(data);
+            }, true);
         }
-
-        // var repeated = colorString.repeat(amplitude);
-        // repeated += secondaryColor.repeat(300 - amplitude);
-
-        // console.log(amplitude);
-
-        // sp108e.sendData(repeated);
 
     },
     notify: (notification) => {
