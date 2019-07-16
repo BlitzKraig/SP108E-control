@@ -2,107 +2,115 @@ var coreaudio = require('./node-core-audio');
 
 //Create a core audio engine
 
-var start = (callback, smooth = false, boostLow = 2, boostHigh = 2)=>{
-var engine = coreaudio.createNewAudioEngine();
-engine.setOptions({
-    inputChannels: 1,
-    outputChannels: 1,
-    interleaved: true
-});
+var start = (callback, smooth = false, boostBand = [1, 1, 1]) => {
+    var engine = coreaudio.createNewAudioEngine();
+    engine.setOptions({
+        inputChannels: 2,
+        outputChannels: 1,
+        interleaved: true
+    });
 
-var ft = require('fourier-transform');
-var db = require('decibels');
+    var ft = require('fourier-transform');
 
-var frameCount = 0;
-var skipFrames = 3;
+    var lowBandFreqMax = 500;
+    var midBandFreqMax = 4000;
 
-var last = [0, 0, 0, 0];
-engine.addAudioCallback(function (buffer) {
-    
-    if(frameCount === 0){
-        frameCount++;
-    } else {
-        if(++frameCount >= skipFrames){
-            frameCount = 0;
-        }
-        return(-1);
-    }
-    
-    //get normalized magnitudes for frequencies from 0 to 22050 with interval 44100/1024 ≈ 43Hz
-    var spectrum = ft(buffer);
+    var lowBandFreq = [0, 300];
+    var midBandFreq = [300, 4000];
+    var highBandFreq = [3000, -1];
 
-    var highSpectrum = spectrum.slice(spectrum.length / 64);
-    var lowSpectrum = spectrum.slice(0, spectrum.length / 64);
-    var highSpectrumCount = 0;
+    // TODO Allow overlap
 
-    var band = [0, 0, 0, 0];
+    var lowMaxIndex = parseInt(lowBandFreqMax / 43); // Each array element is a ~43Hz increase
+    var midMaxIndex = parseInt(midBandFreqMax / 43);
 
-    for (var i = 0; i < lowSpectrum.length; i++) {
-        if (i < lowSpectrum.length / 3) {
-            band[0] += lowSpectrum[i];
-        } else if (i < lowSpectrum.length / 3 * 2) {
-            band[1] += lowSpectrum[i];
+    var lowIndex = [lowBandFreq[0] === 0 ? 0 : parseInt(lowBandFreq[0] / 43), parseInt(lowBandFreq[1] / 43)]
+    var midIndex = [parseInt(midBandFreq[0] / 43), parseInt(midBandFreq[1] / 43)]
+    var highIndex = [parseInt(highBandFreq[0] / 43), highBandFreq[1] === -1 ? 999999 : parseInt(highBandFreq[1] / 43)]
+
+    var frameCount = 0;
+    var skipFrames = 3;
+
+    var last = [0, 0, 0];
+    engine.addAudioCallback(function (buffer) {
+
+        if (frameCount === 0) {
+            frameCount++;
         } else {
-            band[2] += lowSpectrum[i];
+            if (++frameCount >= skipFrames) {
+                frameCount = 0;
+            }
+            return (-1);
         }
 
-        if (i === lowSpectrum.length - 1) {
+        //get normalized magnitudes for frequencies from 0 to 22050 with interval 44100/1024 ≈ 43Hz
 
-            for (var j = 0; j < highSpectrum.length; j++) {
-                if (highSpectrum[j] > 0.05) {
-                    band[3] += highSpectrum[j];
-                    highSpectrumCount++;
-                }
+        // Each array element is an increase by ~ 43hz. Split into 3 bands, based on frequency research for low/mid/hi. Allow freq-band input and calculate so we can tweak it
+        var spectrum = ft(buffer);
 
-                if (j === highSpectrum.length - 1) {
-                    band.forEach((el, k, array) => {
+        var band = [0, 0, 0];
 
-                        if (k === array.length - 1 && highSpectrumCount > 0) {
-                            array[k] = (array[k] / highSpectrumCount).toFixed(2);
-                            array[k] = Math.min(1,array[k] * boostHigh);
-                        } else {
-                            array[k] = (array[k] / (lowSpectrum.length / 3)).toFixed(2);
-                            array[k] = Math.min(1,array[k] * boostLow);
+        for (var i = 0; i < spectrum.length; i++) {
 
-                        }
-                        if(smooth){
-                            if(last[k] > array[k]){
-                                array[k] = (Math.min(1, (array[k] + last[k]) / 2));
-                            }
-                            //  else if(array[k] > last[k]) {
-                            //     array[k] = (last[k] + array[k]) / 3
-                            // }
-
-                            if(array[k] < 0.0001){
-                                array[k] = 0
-                            }
-                            last[k] = array[k];
-                            
-                            //  else {
-                            //     array[k] = (last[k] + array[k]) / 10
-                            // }
-                            
-                        }
-
-                        // if(suppressSilence){
-                        //     if(array[k] < )
-                        // }
-                    
-                    });
-                    callback(band);
+            // if (i <= lowMaxIndex) {
+            //     if (band[0] < spectrum[i]) {
+            //         band[0] = spectrum[i]
+            //     }
+            // } else if (i <= midMaxIndex) {
+            //     if (band[1] < spectrum[i]) {
+            //         band[1] = spectrum[i]
+            //     }
+            // } else {
+            //     if (band[2] < spectrum[i]) {
+            //         band[2] = spectrum[i]
+            //     }
+            // }
+            if (i >= lowIndex[0] && i <= lowIndex[1]) {
+                if (band[0] < spectrum[i]) {
+                    band[0] = spectrum[i]
                 }
             }
+            if (i >= midIndex[0] && i <= midIndex[1]) {
+                if (band[1] < spectrum[i]) {
+                    band[1] = spectrum[i]
+                }
+            }
+            if (i >= highIndex[0] && i <= highIndex[1]) {
+                if (band[2] < spectrum[i]) {
+                    band[2] = spectrum[i]
+                }
+            }
+
+            if (i === spectrum.length - 1) {
+
+                band.forEach((el, k, array) => {
+
+                    array[k] = Math.min(1, array[k] * boostBand[k]);
+                    if (smooth) {
+                        if (last[k] > array[k]) {
+                            array[k] = (Math.min(1, (array[k] + last[k]) / 2));
+                        }
+                        //  else if(array[k] > last[k]) {
+                        //     array[k] = (last[k] + array[k]) / 2
+                        // }
+
+                        if (array[k] < 0.0001) {
+                            array[k] = 0
+                        }
+                        last[k] = array[k];
+
+
+                    }
+
+                });
+                callback(band);
+            }
         }
-    }
-    // UNCOMMENT to play to speakers. Causes feedback!
-    // return(buffer);
-    return (-1);
-});
+        // UNCOMMENT to play to speakers. Causes feedback!
+        // return(buffer);
+        return (-1);
+    });
 }
 
-
-// start((band)=>{
-//     console.log(band)
-// });
 
 module.exports = start;

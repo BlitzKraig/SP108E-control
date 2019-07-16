@@ -378,20 +378,22 @@ var sp108e = {
 
         } else if (type === 'hilometerlightcount') {
 
-            var lights = sp108e.config.device.lightCount;
+            var lights = sp108e.config.device[0].lightCount;
 
-            lights = lights % 2 === 0?lights:lights+1;
+            lights = lights % 2 === 0 ? lights : lights + 1;
 
             bandGenerator((band) => {
                 var background = 'FF6D26';
                 var colors = [];
                 colors.push({
-                    color: 'FF8844',
-                    count: parseInt((150 / (lights / 2)) * ((lights / 2 ) * band[3]))
+                    color: 'FF88FF',
+                    // color: '00FFFF',
+                    count: parseInt((150 / (lights / 2)) * ((lights / 2) * band[2]))
                 });
                 colors.push({
                     color: 'DD3311',
-                    count: parseInt((150 / (lights / 2)) * ((lights / 2 ) * band[0]))
+                    // color: 'FF0000',
+                    count: parseInt((150 / (lights / 2)) * ((lights / 2) * band[0]))
                 });
 
 
@@ -402,9 +404,9 @@ var sp108e = {
                 } else {
                     data += `${background.repeat(150 - colors[0].count)}`;
                 }
-                if(data.length > 900){
+                if (data.length > 900) {
                     data += '0'.repeat(900 - data.length);
-                } else if (data.length < 900){
+                } else if (data.length < 900) {
                     data = data.substr(0, 900);
                 }
 
@@ -412,7 +414,69 @@ var sp108e = {
                 data = data.match(/.{6}/g).reverse().join('') + data;
 
                 sp108e.sendData(data);
-            }, false, 1, 1);
+            }, true, 1, 1);
+
+        } else if (type === 'threebandmeterlightcount') {
+
+            var lights = sp108e.config.device[0].lightCount;
+
+            lights = lights % 2 === 0 ? lights : lights + 1;
+
+            bandGenerator((band) => {
+                // var background = '000000';
+                var background = 'FF6D26';
+                var colors = [];
+
+                colors.push({
+                    // color: '0000FF',
+                    color: '77FFCC',
+                    // color: '0000FF',
+                    count: parseInt((150 / (lights / 2)) * ((lights / 2) * band[2]))
+                });
+                colors.push({
+                    // color: 'FF0000',
+                    color: 'DDDD22',
+                    // color: 'FF0000',
+                    count: parseInt((150 / (lights / 2)) * ((lights / 2) * band[1]))
+                });
+                colors.push({
+                    // color: 'FFFFFF',
+                    color: 'EE3311',
+                    // color: '00FF00',
+                    count: parseInt((150 / (lights / 2)) * ((lights / 2) * band[0]))
+                });
+
+
+                var data = `${colors[0].color.repeat(colors[0].count)}`;
+                if (colors[1].count > colors[0].count) {
+                    data += `${colors[1].color.repeat(colors[1].count - colors[0].count)}`;
+
+                    if (colors[2].count > colors[1].count) {
+                        data += `${colors[2].color.repeat(colors[2].count - colors[1].count)}`;
+                        data += `${background.repeat(150 - colors[2].count)}`;
+                    } else {
+                        data += `${background.repeat(150 - colors[1].count)}`;
+                    }
+                } else if (colors[2].count > colors[0].count) {
+                    data += `${colors[2].color.repeat(colors[2].count - colors[0].count)}`;
+                    data += `${background.repeat(150 - colors[2].count)}`;
+                } else {
+                    data += `${background.repeat(150 - colors[0].count)}`;
+                }
+
+                // else {
+                // }
+                if (data.length > 900) {
+                    data += '0'.repeat(900 - data.length);
+                } else if (data.length < 900) {
+                    data = data.substr(0, 900);
+                }
+
+                // CHECK THIS LOGIC
+                data = data.match(/.{6}/g).reverse().join('') + data;
+
+                sp108e.sendData(data);
+            }, true, [1, 1, 1]);
 
         }
 
