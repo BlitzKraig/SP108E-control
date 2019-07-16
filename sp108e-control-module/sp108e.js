@@ -282,7 +282,7 @@ var sp108e = {
                         if (!waitingForResponse) {
                             // TODO Send data regularly (incl movement), have this stuff simply update the data separately. Should keep it smoother.
                             moveCounter++;
-                            if (moveCounter == 15) {
+                            if (moveCounter === 15) {
                                 moveCounter = 0;
                             }
                         }
@@ -348,6 +348,34 @@ var sp108e = {
 
                 sp108e.sendData(data);
             }, true);
+        } else if (type === 'hilometer') {
+            bandGenerator((band) => {
+                var background = 'FFFFFF';
+                var colors = [];
+                colors.push({
+                    color: 'FF0000',
+                    count: parseInt(150 * band[0])
+                });
+                colors.push({
+                    color: '00FF00',
+                    count: parseInt(150 * band[3])
+                });
+
+
+                var data = `${colors[0].color.repeat(colors[0].count)}`;
+                if (colors[1].count > colors[0].count) {
+                    data += `${colors[1].color.repeat(colors[1].count - colors[0].count)}`;
+                    data += `${background.repeat(150 - colors[1].count)}`;
+                } else {
+                    data += `${background.repeat(150 - colors[0].count)}`;
+                }
+
+                // CHECK THIS LOGIC
+                data = data.match(/.{6}/g).reverse().join('') + data;
+
+                sp108e.sendData(data);
+            }, true);
+
         }
 
     },
