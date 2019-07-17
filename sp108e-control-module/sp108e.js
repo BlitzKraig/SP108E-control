@@ -224,7 +224,7 @@ var sp108e = {
     playVideo: (video, time = 50, loop = true) => {
 
     },
-    audioDetection: (type = 'fourcolor', pastel = false) => {
+    audioDetection: (type = 'fourcolor', pastel = false, offset = 0) => {
 
 
         // var color1 = 'FF0000';
@@ -297,7 +297,7 @@ var sp108e = {
                 // console.log(data);
 
                 sp108e.sendData(data);
-            }, true, 1, 1);
+            }, true, false, 1, 1);
 
         } else if (type === 'twocolor') {
             bandGenerator((band) => {
@@ -376,7 +376,7 @@ var sp108e = {
                 data = data.match(/.{6}/g).reverse().join('') + data;
 
                 sp108e.sendData(data);
-            }, false, 1, 1);
+            }, false, false, 1, 1);
 
         } else if (type === 'hilometerlightcount') {
 
@@ -416,7 +416,7 @@ var sp108e = {
                 data = data.match(/.{6}/g).reverse().join('') + data;
 
                 sp108e.sendData(data);
-            }, true, 1, 1);
+            }, true, false, 1, 1);
 
         } else if (type === 'threebandmeterlightcount') {
 
@@ -478,7 +478,7 @@ var sp108e = {
                 data = data.match(/.{6}/g).reverse().join('') + data;
 
                 sp108e.sendData(data);
-            }, true, [1, 1, 1]);
+            }, true, false, [1, 1, 1]);
 
         } else if (type === 'threebandmeterlightcountstereo') {
 
@@ -492,14 +492,15 @@ var sp108e = {
                 var colors = [];
 
                 colors.push({
+                    // color: 'FFFFFF',
                     // color: '0000FF',
                     color: '77FFCC',
                     // color: '0000FF',
                     count: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[0][2])),
                     secondaryCount: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[1][2]))
                 });
-                console.log(colors);
                 colors.push({
+                    // color: '000000',
                     // color: 'FF0000',
                     color: 'DDDD22',
                     // color: 'FF0000',
@@ -507,6 +508,7 @@ var sp108e = {
                     secondaryCount: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[1][1]))
                 });
                 colors.push({
+                    // color: 'FFFFFF',
                     // color: 'FFFFFF',
                     color: 'EE3311',
                     // color: '00FF00',
@@ -549,21 +551,15 @@ var sp108e = {
                     dataSecondary += `${background.repeat(150 - colors[0].secondaryCount)}`;
                 }
 
-
-                // else {
-                // }
-                // if (data.length > 900) {
-                //     data += '0'.repeat(900 - data.length);
-                // } else if (data.length < 900) {
-                //     data = data.substr(0, 900);
-                // }
-
-                // console.log(dataSecondary);
-
                 data = dataSecondary.match(/.{6}/g).reverse().join('') + data;
 
+                if(offset !== 0){
+                    // TODO: Improve offset
+                    data = background.repeat(offset) + data.substr(0, data.length - (6 * offset));
+                }
+
                 sp108e.sendData(data);
-            }, true, [1, 1, 1], true);
+            }, true, false, [1, 1, 1.5], true);
 
         }
 

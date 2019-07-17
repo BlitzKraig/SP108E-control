@@ -2,15 +2,16 @@ var coreaudio = require('./node-core-audio');
 
 //Create a core audio engine
 
-var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) => {
+var start = (callback, smoothDrop = false, smoothRise = false, boostBand = [1, 1, 1], stereo = false) => {
     var engine = coreaudio.createNewAudioEngine();
 
     if (stereo) {
-        // TODO Fix stereo mode. Notice behaviour on stereo test video/audio
+        // NOTE: Non-interleaved stereo mode appears to be broken. Workaround using interleaved
         engine.setOptions({
             inputChannels: 2,
             outputChannels: 2,
-            interleaved: false
+            interleaved: true,
+            framesPerBuffer: 512
         });
     } else {
         engine.setOptions({
@@ -22,28 +23,27 @@ var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) =>
 
     var ft = require('fourier-transform');
 
-    var lowBandFreqMax = 500;
-    var midBandFreqMax = 4000;
 
-    var lowBandFreq = [0, 300];
-    var midBandFreq = [300, 4000];
+    var lowBandFreq = [0, 500];
+    var midBandFreq = [500, 4000];
     var highBandFreq = [3000, -1];
 
-    // TODO Allow overlap
-    // TODO check Hz interval with stereo vs mono mode
-    
-    var lowMaxIndex = parseInt(lowBandFreqMax / 43); // Each array element is a ~43Hz increase
-    var midMaxIndex = parseInt(midBandFreqMax / 43);
-
-    var lowIndex = [lowBandFreq[0] === 0 ? 0 : parseInt(lowBandFreq[0] / 43), parseInt(lowBandFreq[1] / 43)]
-    var midIndex = [parseInt(midBandFreq[0] / 43), parseInt(midBandFreq[1] / 43)]
-    var highIndex = [parseInt(highBandFreq[0] / 43), highBandFreq[1] === -1 ? 999999 : parseInt(highBandFreq[1] / 43)]
+    var interval = 43;
+    if (stereo) {
+        interval = interval * 2;
+    }
+    var lowIndex = [lowBandFreq[0] === 0 ? 0 : parseInt(lowBandFreq[0] / interval), parseInt(lowBandFreq[1] / interval)]
+    var midIndex = [parseInt(midBandFreq[0] / interval), parseInt(midBandFreq[1] / interval)]
+    var highIndex = [parseInt(highBandFreq[0] / interval), highBandFreq[1] === -1 ? 999999 : parseInt(highBandFreq[1] / interval)]
 
     var frameCount = 0;
     var skipFrames = 3;
 
+
+    // TODO: Rename "secondary" vars to channel (left, right)
     var last = [0, 0, 0];
     var secondaryLast = [0, 0, 0];
+
     engine.addAudioCallback(function (buffer) {
 
         if (frameCount === 0) {
@@ -57,13 +57,21 @@ var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) =>
         }
 
         //get normalized magnitudes for frequencies from 0 to 22050 with interval 44100/1024 ≈ 43Hz - sampleRate / framesPerBuffer
-
-        // Each array element is an increase by ~ 43hz. Split into 3 bands, based on frequency research for low/mid/hi. Allow freq-band input and calculate so we can tweak it
         var spectrum;
-        var secondarySpectrum;
+        var secondarySpectrum
         if (stereo) {
-            spectrum = ft(buffer[0]);
-            secondarySpectrum = ft(buffer[1]);
+            var firstBuffer = [];
+            var secondBuffer = [];
+
+            buffer.forEach((element, i) => {
+                if (i % 2 == 1) {
+                    firstBuffer.push(element);
+                } else {
+                    secondBuffer.push(element);
+                }
+            });
+            spectrum = ft(firstBuffer);
+            secondarySpectrum = ft(secondBuffer);
         } else {
             spectrum = ft(buffer);
         }
@@ -73,47 +81,36 @@ var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) =>
 
         for (var i = 0; i < spectrum.length; i++) {
 
-            // if (i <= lowMaxIndex) {
-            //     if (band[0] < spectrum[i]) {
-            //         band[0] = spectrum[i]
-            //     }
-            // } else if (i <= midMaxIndex) {
-            //     if (band[1] < spectrum[i]) {
-            //         band[1] = spectrum[i]
-            //     }
-            // } else {
-            //     if (band[2] < spectrum[i]) {
-            //         band[2] = spectrum[i]
-            //     }
-            // }
             if (i >= lowIndex[0] && i <= lowIndex[1]) {
-                if (band[0] < spectrum[i]) {
-                    band[0] = spectrum[i];
-                }
                 if (stereo) {
                     if (secondaryBand[0] < secondarySpectrum[i]) {
                         secondaryBand[0] = secondarySpectrum[i];
                     }
                 }
+                if (band[0] < spectrum[i]) {
+                    band[0] = spectrum[i];
+                }
             }
             if (i >= midIndex[0] && i <= midIndex[1]) {
-                if (band[1] < spectrum[i]) {
-                    band[1] = spectrum[i];
-                }
                 if (stereo) {
                     if (secondaryBand[1] < secondarySpectrum[i]) {
                         secondaryBand[1] = secondarySpectrum[i];
                     }
                 }
+                if (band[1] < spectrum[i]) {
+                    band[1] = spectrum[i];
+                }
             }
             if (i >= highIndex[0] && i <= highIndex[1]) {
-                if (band[2] < spectrum[i]) {
-                    band[2] = spectrum[i];
-                }
+
                 if (stereo) {
                     if (secondaryBand[2] < secondarySpectrum[i]) {
                         secondaryBand[2] = secondarySpectrum[i];
                     }
+                }
+                if (band[2] < spectrum[i]) {
+                    band[2] = spectrum[i];
+
                 }
             }
 
@@ -125,13 +122,10 @@ var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) =>
                     if (stereo) {
                         secondaryBand[k] = Math.min(1, secondaryBand[k] * boostBand[k]);
                     }
-                    if (smooth) {
+                    if (smoothDrop) {
                         if (last[k] > band[k]) {
                             band[k] = (Math.min(1, (band[k] + last[k]) / 2));
                         }
-                        //  else if(band[k] > last[k]) {
-                        //     band[k] = (last[k] + band[k]) / 2
-                        // }
 
                         if (band[k] < 0.0001) {
                             band[k] = 0
@@ -142,9 +136,6 @@ var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) =>
                             if (secondaryLast[k] > secondaryBand[k]) {
                                 secondaryBand[k] = (Math.min(1, (secondaryBand[k] + secondaryLast[k]) / 2));
                             }
-                            //  else if(secondaryBand[k] > secondaryLast[k]) {
-                            //     secondaryBand[k] = (secondaryLast[k] + secondaryBand[k]) / 2
-                            // }
 
                             if (secondaryBand[k] < 0.0001) {
                                 secondaryBand[k] = 0;
@@ -154,15 +145,60 @@ var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) =>
 
 
                     }
+                    if (smoothDrop) {
+                        if (band[k] > last[k]) {
+                            band[k] = (last[k] + band[k]) / 2
+                        }
+                        if (band[k] < 0.0001) {
+                            band[k] = 0
+                        }
+                        last[k] = band[k];
+
+                        if (stereo) {
+                            if (secondaryBand[k] > secondaryLast[k]) {
+                                secondaryBand[k] = (secondaryLast[k] + secondaryBand[k]) / 2
+                            }
+                            if (secondaryBand[k] < 0.0001) {
+                                secondaryBand[k] = 0;
+                            }
+                            secondaryLast[k] = secondaryBand[k];
+                        }
+                    }
 
                 });
                 if (stereo) {
+                    // var buf1 = 0;
+                    // var buf2 = 0;
+                    // spectrum.forEach((element, i) => {
+                    //     if (i % 2 === 1) {
+                    //         buf1 += element;
+                    //     } else {
+                    //         buf2 += element;
+                    //     }
+                    // });
+                    // // buffer[1].forEach(element => {
+                    // //     buf2 += element;
+                    // // });
+                    // console.log(Math.abs(buf1 / (buffer.length / 2)).toFixed(5) + '\t' + Math.abs(buf2 / (buffer.length / 2)).toFixed(5));
                     callback([band, secondaryBand]);
                 } else {
+
+                    // var buf1 = 0;
+                    // var buf2 = 0;
+                    // buffer.forEach((element, i) => {
+                    //     if (i % 2 == 1){
+                    //         buf1 += element;
+                    //     } else {
+                    //         buf2 += element;
+                    //     }
+                    // });
+
+                    // console.log(Math.abs(buf1 / (buffer.length / 2)).toFixed(3) + '\t' + Math.abs(buf2 / (buffer.length / 2)).toFixed(3));
                     callback(band);
                 }
             }
         }
+
         // UNCOMMENT to play to speakers. Causes feedback!
         // return(buffer);
 
