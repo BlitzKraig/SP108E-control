@@ -480,6 +480,88 @@ var sp108e = {
                 sp108e.sendData(data);
             }, true, [1, 1, 1]);
 
+        } else if (type === 'threebandmeterlightcountstereo') {
+
+            var lights = sp108e.config.device[0].lightCount;
+
+            lights = lights % 2 === 0 ? lights : lights + 1;
+
+            bandGenerator((bands) => {
+                // var background = '000000';
+                var background = 'FF6D26';
+                var colors = [];
+
+                colors.push({
+                    // color: '0000FF',
+                    color: '77FFCC',
+                    // color: '0000FF',
+                    count: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[0][2])),
+                    secondaryCount: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[1][2]))
+                });
+                colors.push({
+                    // color: 'FF0000',
+                    color: 'DDDD22',
+                    // color: 'FF0000',
+                    count: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[0][1])),
+                    secondaryCount: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[1][1]))
+                });
+                colors.push({
+                    // color: 'FFFFFF',
+                    color: 'EE3311',
+                    // color: '00FF00',
+                    count: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[0][0])),
+                    secondaryCount: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[1][0]))
+                });
+
+
+                var data = `${colors[0].color.repeat(colors[0].count)}`;
+                var dataSecondary = `${colors[0].color.repeat(colors[0].secondaryCount)}`;
+                if (colors[1].count > colors[0].count) {
+                    data += `${colors[1].color.repeat(colors[1].count - colors[0].count)}`;
+
+                    if (colors[2].count > colors[1].count) {
+                        data += `${colors[2].color.repeat(colors[2].count - colors[1].count)}`;
+                        data += `${background.repeat(150 - colors[2].count)}`;
+                    } else {
+                        data += `${background.repeat(150 - colors[1].count)}`;
+                    }
+                } else if (colors[2].count > colors[0].count) {
+                    data += `${colors[2].color.repeat(colors[2].count - colors[0].count)}`;
+                    data += `${background.repeat(150 - colors[2].count)}`;
+                } else {
+                    data += `${background.repeat(150 - colors[0].count)}`;
+                }
+
+                if (colors[1].secondaryCount > colors[0].secondaryCount) {
+                    dataSecondary += `${colors[1].color.repeat(colors[1].secondaryCount - colors[0].secondaryCount)}`;
+
+                    if (colors[2].secondaryCount > colors[1].secondaryCount) {
+                        dataSecondary += `${colors[2].color.repeat(colors[2].secondaryCount - colors[1].secondaryCount)}`;
+                        dataSecondary += `${background.repeat(150 - colors[2].secondaryCount)}`;
+                    } else {
+                        dataSecondary += `${background.repeat(150 - colors[1].secondaryCount)}`;
+                    }
+                } else if (colors[2].secondaryCount > colors[0].secondaryCount) {
+                    dataSecondary += `${colors[2].color.repeat(colors[2].secondaryCount - colors[0].secondaryCount)}`;
+                    dataSecondary += `${background.repeat(150 - colors[2].secondaryCount)}`;
+                } else {
+                    dataSecondary += `${background.repeat(150 - colors[0].secondaryCount)}`;
+                }
+
+
+                // else {
+                // }
+                // if (data.length > 900) {
+                //     data += '0'.repeat(900 - data.length);
+                // } else if (data.length < 900) {
+                //     data = data.substr(0, 900);
+                // }
+
+                data = dataSecondary.match(/.{6}/g).reverse().join('') + data;
+
+                sp108e.sendData(data);
+            }, true, [1, 1, 1]);
+
         }
 
     },
