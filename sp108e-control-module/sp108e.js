@@ -498,6 +498,7 @@ var sp108e = {
                     count: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[0][2])),
                     secondaryCount: parseInt((150 / (lights / 2)) * ((lights / 2) * bands[1][2]))
                 });
+                console.log(colors);
                 colors.push({
                     // color: 'FF0000',
                     color: 'DDDD22',
@@ -557,10 +558,12 @@ var sp108e = {
                 //     data = data.substr(0, 900);
                 // }
 
+                // console.log(dataSecondary);
+
                 data = dataSecondary.match(/.{6}/g).reverse().join('') + data;
 
                 sp108e.sendData(data);
-            }, true, [1, 1, 1]);
+            }, true, [1, 1, 1], true);
 
         }
 

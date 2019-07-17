@@ -6,6 +6,7 @@ var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) =>
     var engine = coreaudio.createNewAudioEngine();
 
     if (stereo) {
+        // TODO Fix stereo mode. Notice behaviour on stereo test video/audio
         engine.setOptions({
             inputChannels: 2,
             outputChannels: 2,
@@ -13,7 +14,7 @@ var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) =>
         });
     } else {
         engine.setOptions({
-            inputChannels: 2,
+            inputChannels: 1,
             outputChannels: 1,
             interleaved: true
         });
@@ -30,7 +31,7 @@ var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) =>
 
     // TODO Allow overlap
     // TODO check Hz interval with stereo vs mono mode
-
+    
     var lowMaxIndex = parseInt(lowBandFreqMax / 43); // Each array element is a ~43Hz increase
     var midMaxIndex = parseInt(midBandFreqMax / 43);
 
@@ -55,7 +56,7 @@ var start = (callback, smooth = false, boostBand = [1, 1, 1], stereo = false) =>
             return (-1);
         }
 
-        //get normalized magnitudes for frequencies from 0 to 22050 with interval 44100/1024 ≈ 43Hz
+        //get normalized magnitudes for frequencies from 0 to 22050 with interval 44100/1024 ≈ 43Hz - sampleRate / framesPerBuffer
 
         // Each array element is an increase by ~ 43hz. Split into 3 bands, based on frequency research for low/mid/hi. Allow freq-band input and calculate so we can tweak it
         var spectrum;
