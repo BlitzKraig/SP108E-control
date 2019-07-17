@@ -235,12 +235,12 @@ var sp108e = {
 
         sp108e.sendMessage(messages.triggerLiveMode);
 
-        if (type === 'fourcolor' || type === 'fourcolormix' || type === 'fourcolormixmoving') {
+        if (type === 'threecolor' || type === 'threecolormix' || type === 'threecolormixmoving') {
             var moveCounter = 0;
 
             bandGenerator((band) => {
 
-                // 75 pixels of each color, color intensity decided by band
+                // 100 pixels of each color, color intensity decided by band
                 // var color1 = `${255 * band[0]}`
                 //color1.repeat(75);
 
@@ -263,25 +263,27 @@ var sp108e = {
                 }
                 color3 = pastel ? `8888${color3}` : `0000${color3}`;
 
-                var color4 = parseInt(255 * band[3]).toString(16);
-                if (color4.length < 2) {
-                    color4 = `0${color4}`;
-                }
-                color4 = pastel ? `${color4}88${color4}` : `${color4}00${color4}`;
+                // var color4 = parseInt(255 * band[3]).toString(16);
+                // if (color4.length < 2) {
+                //     color4 = `0${color4}`;
+                // }
+                // color4 = pastel ? `${color4}88${color4}` : `${color4}00${color4}`;
 
                 var data;
-                if (type === 'fourcolormix' || type === 'fourcolormixmoving') {
-                    data = color1.repeat(15) + color2.repeat(15) + color3.repeat(15) + color4.repeat(15);
+                if (type === 'threecolormix' || type === 'threecolormixmoving') {
+                    data = color1.repeat(20) + color2.repeat(20) + color3.repeat(20);
                     data = data.repeat(5);
 
                     // console.log(data.length); = 1800
 
-                    if (type === 'fourcolormixmoving') {
+                    if (type === 'threecolormixmoving') {
                         var movedData = data.substr(1800 - (24 * moveCounter), 1800) + data.substring(0, 1800 - (6 * moveCounter));
                         data = movedData;
                         if (!waitingForResponse) {
                             // TODO Send data regularly (incl movement), have this stuff simply update the data separately. Should keep it smoother.
                             moveCounter++;
+
+                            // TODO Update this to match with 3 color instead of 4
                             if (moveCounter === 15) {
                                 moveCounter = 0;
                             }
@@ -304,13 +306,13 @@ var sp108e = {
                 // var color1 = `${255 * band[0]}`
                 //color1.repeat(75);
 
-                var color1 = parseInt(255 * (band[0] + band[1] + band[2] / 3)).toString(16);
+                var color1 = parseInt(255 * band[0]).toString(16);
                 if (color1.length < 2) {
                     color1 = `0${color1}`;
                 }
                 color1 = `${color1}0000`;
 
-                var color2 = parseInt(255 * band[4]).toString(16);
+                var color2 = parseInt(255 * (band[1] + band[2]) / 2).toString(16);
                 if (color2.length < 2) {
                     color2 = `0${color2}`;
                 }
@@ -320,30 +322,30 @@ var sp108e = {
 
                 sp108e.sendData(data);
             }, true);
-        } else if (type === 'fourcolormeter') {
+        } else if (type === 'threecolormeter') {
             bandGenerator((band) => {
                 var background = 'FFFFFF';
                 var colors = [];
                 colors.push({
                     color: 'FF0000',
-                    count: parseInt(75 * band[0])
+                    count: parseInt(100 * band[0])
                 });
                 colors.push({
                     color: '00FF00',
-                    count: parseInt(75 * band[1])
+                    count: parseInt(100 * band[1])
                 });
                 colors.push({
                     color: '0000FF',
-                    count: parseInt(75 * band[2])
+                    count: parseInt(100 * band[2])
                 });
-                colors.push({
-                    color: 'FF00FF',
-                    count: parseInt(75 * band[3])
-                });
+                // colors.push({
+                //     color: 'FF00FF',
+                //     count: parseInt(75 * band[3])
+                // });
 
                 var data = '';
                 colors.forEach(color => {
-                    data += `${color.color.repeat(color.count)}${background.repeat(75 - color.count)}`;
+                    data += `${color.color.repeat(color.count)}${background.repeat(100 - color.count)}`;
                 });
 
                 sp108e.sendData(data);
@@ -354,7 +356,7 @@ var sp108e = {
                 var colors = [];
                 colors.push({
                     color: 'FF8844',
-                    count: parseInt(150 * band[3])
+                    count: parseInt(150 * band[2])
                 });
                 colors.push({
                     color: 'DD3311',
